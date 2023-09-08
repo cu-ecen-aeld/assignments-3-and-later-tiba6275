@@ -9,7 +9,7 @@ writestr=$2
 # Check for correct number of input parameters
 if [ $# -ne $NUM_PARAMS ]
 then
-	echo "Incorrect number of parameters. Should be ${PARAMS}, was $#."
+	echo "Incorrect number of parameters. Should be $NUM_PARAMS, was $#."
 	echo "The first argument is a path to a file on the filesystem."
 	echo "The second argument is a text string to write to the file."
 	echo "Exiting..."
@@ -18,15 +18,12 @@ fi
 
 # Check whether directory exists, create if not
 dir=$(dirname "$writefile")
-if [ ! -d "$dir" ]
+mkdir -v -p "$dir"
+if [ $? -ne 0 ]
 then
-	mkdir -v -p "$dir"
-	if [ $? -ne 0 ]
-	then
-		echo "Failed to create directory."
-		echo "Exiting..."
-		exit 1
-	fi
+	echo "Failed to create directory."
+	echo "Exiting..."
+	exit 1
 fi
 
 # Write the string to file and check for success
@@ -39,5 +36,4 @@ then
 fi
 
 echo "$writestr written to $writefile."
-exit 0
 
