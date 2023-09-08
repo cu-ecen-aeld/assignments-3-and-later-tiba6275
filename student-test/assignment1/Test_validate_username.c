@@ -14,8 +14,8 @@
 */
 void test_validate_my_username()
 {
-    char *username_from_conf_file = malloc_username_from_conf_file();
-    TEST_ASSERT_EQUAL_STRING(my_username(),malloc_username_from_conf_file);
-    free(username_from_conf_file);
-    username_from_conf_file = 0;
+    char *username = malloc_username_from_conf_file();
+    TEST_ASSERT_EQUAL_STRING(my_username(),username);
+    free(username);
+    username = 0;
 }
