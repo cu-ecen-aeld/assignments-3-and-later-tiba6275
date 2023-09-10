@@ -1,17 +1,25 @@
+# Compiler
 CC = gcc
+# Cross compiler variable
 CROSS_COMPILE ?=
+# Set target
 TARGET = writer
-
+# Set source
 SRCS = writer.c
-OBJS = $(SRCS:.c = .o)
+# Set object
+OBJS = writer.o
 
+# Default build
 default: $(TARGET)
 
+# Cross compile using aarch64-none-linux-gnu-gcc
 aarch64-none-linux-gnu-%:
 	$(MAKE) CROSS_COMPILE = aarch64-none-linux-gnu- $(TARGET)
     
+# Build with appropriate compiler
 $(TARGET): $(OBJS)
 	$(CROSS_COMPILE)$(CC) -o $(TARGET) $(OBJS)
-    
+
+# Clean target
 clean:
-	rm -f $(TARGET)
+	rm -f $(TARGET) $(OBJS)
