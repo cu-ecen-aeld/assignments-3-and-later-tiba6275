@@ -14,11 +14,15 @@ default: $(TARGET)
 
 # Cross compile using aarch64-none-linux-gnu-gcc
 aarch64-none-linux-gnu-%:
-	$(MAKE) CROSS_COMPILE = aarch64-none-linux-gnu- $(TARGET)
-    
+	$(MAKE) CROSS_COMPILE=aarch64-none-linux-gnu-
+
 # Build with appropriate compiler
 $(TARGET): $(OBJS)
 	$(CROSS_COMPILE)$(CC) -o $(TARGET) $(OBJS)
+	
+# Build object
+writer.o: writer.c
+	$(CROSS_COMPILE)$(CC) -c writer.c -o writer.o
 
 # Clean target
 clean:
