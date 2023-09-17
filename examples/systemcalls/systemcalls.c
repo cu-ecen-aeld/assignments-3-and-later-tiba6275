@@ -68,7 +68,7 @@ bool do_exec(int count, ...)
         execv(command[0], command);
         perror("Command execution failed.");
         va_end(args);
-        return false;
+        exit(-1);
     }
     
     waitpid(pid, &status, 0);
@@ -132,7 +132,7 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
         execv(command[0], command);
         perror("Command execution failed.");
         va_end(args);
-        return false;
+        exit(-1);
     }
     
     waitpid(pid, &status, 0);
