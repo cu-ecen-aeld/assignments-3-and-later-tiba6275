@@ -1,3 +1,20 @@
+/* Command execution code for CU Boulder ECEN 5713, assignment 3.
+ * 
+ * Shell provided by CU Boulder, ECEN 5713.
+ * Modified by: Tim Bailey, tiba6275@colorado.edu
+ * Date: 9/17/2023
+ *
+ * Referenced Linux System Programming by Robert Love, p161, as well as
+ * https://stackoverflow.com/questions/13784269/redirection-inside-call
+ * -to-execvp-not-working/13784315#13784315
+ *
+ * For educational use only.
+ */
+
+#include <stdlib.h>
+#include <unistd.h>
+#include <wait.h>
+#include <fcntl.h>
 #include "systemcalls.h"
 
 /**
@@ -9,14 +26,10 @@
 */
 bool do_system(const char *cmd)
 {
-
-/*
- * TODO  add your code here
- *  Call the system() function with the command set in the cmd
- *   and return a boolean true if the system() call completed with success
- *   or false() if it returned a failure
-*/
-
+    if (system(cmd) != 0) {
+        perror("Command failed.");
+    	return false;
+    }
     return true;
 }
 
@@ -32,6 +45,8 @@ bool do_system(const char *cmd)
 *   using the execv() call, false if an error occurred, either in invocation of the
 *   fork, waitpid, or execv() command, or if a non-zero return value was returned
 *   by the command issued in @param arguments with the specified arguments.
+*
+* Referenced Linux System Programming by Robert Love, p. 161.
 */
 
 bool do_exec(int count, ...)
@@ -40,34 +55,49 @@ bool do_exec(int count, ...)
     va_start(args, count);
     char * command[count+1];
     int i;
+    int status;
     for(i=0; i<count; i++)
     {
         command[i] = va_arg(args, char *);
     }
     command[count] = NULL;
-    // this line is to avoid a compile warning before your implementation is complete
-    // and may be removed
-    command[count] = command[count];
 
-/*
- * TODO:
- *   Execute a system command by calling fork, execv(),
- *   and wait instead of system (see LSP page 161).
- *   Use the command[0] as the full path to the command to execute
- *   (first argument to execv), and use the remaining arguments
- *   as second argument to the execv() command.
- *
-*/
-
+    fflush(stdout);
+    pid_t pid = fork();
+    if (pid == 0) {
+        execv(command[0], command);
+        perror("Command execution failed.");
+        va_end(args);
+        return false;
+    }
+    
+    waitpid(pid, &status, 0);
+    if (WIFEXITED(status)) {
+        if (WEXITSTATUS(status) == 0) {
+            printf("Child execution successful.\n");
+            va_end(args);
+            return true;
+        } else {
+            perror("Child execution failed.");
+            va_end(args);
+            return false;
+        }
+    } else {
+        perror("Child exited abnormally.");
+        va_end(args);
+        return false;
+    }
     va_end(args);
-
-    return true;
+    return false;
 }
 
 /**
 * @param outputfile - The full path to the file to write with command output.
 *   This file will be closed at completion of the function call.
 * All other parameters, see do_exec above
+*
+* Referenced https://stackoverflow.com/questions/13784269/redirection-inside
+* -call-to-execvp-not-working/13784315#13784315
 */
 bool do_exec_redirect(const char *outputfile, int count, ...)
 {
@@ -75,25 +105,55 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     va_start(args, count);
     char * command[count+1];
     int i;
+    int status;
     for(i=0; i<count; i++)
     {
         command[i] = va_arg(args, char *);
     }
     command[count] = NULL;
-    // this line is to avoid a compile warning before your implementation is complete
-    // and may be removed
-    command[count] = command[count];
 
-
-/*
- * TODO
- *   Call execv, but first using https://stackoverflow.com/a/13784315/1446624 as a refernce,
- *   redirect standard out to a file specified by outputfile.
- *   The rest of the behaviour is same as do_exec()
- *
-*/
-
+    int fd = creat(outputfile, 777);
+    if (fd == -1) {
+        perror("File creation failed.");
+        va_end(args);
+        return false;
+    } else if (dup2(fd, 1) != 0) {
+        perror("dup2 failure.");
+        close(fd);
+        va_end(args);
+        return false;
+    }
+    
+    fflush(stdout);
+    pid_t pid = fork();
+    if (pid == 0) {
+        execv(command[0], command);
+        perror("Command execution failed.");
+        close(fd);
+        va_end(args);
+        return false;
+    }
+    
+    waitpid(pid, &status, 0);
+    if (WIFEXITED(status)) {
+        if (WEXITSTATUS(status) == 0) {
+            printf("Child execution successful.\n");
+            close(fd);
+            va_end(args);
+            return true;
+        } else {
+            perror("Child execution failed.");
+            close(fd);
+            va_end(args);
+            return false;
+        }
+    } else {
+        perror("Child exited abnormally.");
+        close(fd);
+        va_end(args);
+        return false;
+    }
+    close(fd);
     va_end(args);
-
-    return true;
+    return false;
 }
