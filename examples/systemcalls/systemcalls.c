@@ -112,24 +112,25 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     }
     command[count] = NULL;
 
-    int fd = creat(outputfile, 777);
+    int fd = creat(outputfile, 0644);
     if (fd == -1) {
         perror("File creation failed.");
         va_end(args);
         return false;
-    } else if (dup2(fd, 1) != 0) {
-        perror("dup2 failure.");
-        close(fd);
-        va_end(args);
-        return false;
-    }
+    } 
     
     fflush(stdout);
     pid_t pid = fork();
     if (pid == 0) {
+        if (dup2(fd, 1) < 0) {
+            perror("dup2 failure.");
+            abort();
+            close(fd);
+            return false;
+        }
+        close(fd);
         execv(command[0], command);
         perror("Command execution failed.");
-        close(fd);
         va_end(args);
         return false;
     }
