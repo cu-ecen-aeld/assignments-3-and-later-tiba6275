@@ -2,6 +2,8 @@
 # Script outline to install and build kernel.
 # Author: Siddhant Jajoo.
 # Modified by Tim Bailey for CU Boulder ECEN 5713 Assignment 3
+# Referenced lecture slides and https://subscription.packtpub.com/book/iot-and-hardware/9
+# 781787124202/1/ch01lvl1sec06/5-the-linux-root-filesystemld-2.31. for libraries
 
 set -e
 set -u
