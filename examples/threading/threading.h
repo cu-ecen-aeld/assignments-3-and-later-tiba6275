@@ -1,3 +1,10 @@
+/* Thread handling for ECEN 5713, A4 Part 1.
+ * Modified by Tim Bailey, tiba6275@colorado.edu
+ * Referenced ECEN 5713 lecture slides, which referenced
+ * Linux System Programmer.
+ * For educational use only.
+ */
+
 #include <stdbool.h>
 #include <pthread.h>
 
@@ -8,23 +15,10 @@
  * the joiner thread.
  */
 struct thread_data{
-    /*
-     * TODO: add other values your thread will need to manage
-     * into this structure, use this structure to communicate
-     * between the start_thread_obtaining_mutex function and
-     * your thread implementation.
-     */
-
-    /**
-     * Set to true if the thread completed with success, false
-     * if an error occurred.
-     */
-
-    pthread_mutex_t *mutex;
-    int wait_to_obtain_ms;
-    int wait_to_release_ms;
-    bool thread_complete_success;
-
+    pthread_mutex_t *mutex; // Mutex for thread use
+    int wait_to_obtain_ms; // Time to wait to obtain the mutex in ms
+    int wait_to_release_ms; // Time to wait to release the mutex in ms
+    bool thread_complete_success; // False if errors were encountered obtaining or releasing lock, else true
 };
 
 

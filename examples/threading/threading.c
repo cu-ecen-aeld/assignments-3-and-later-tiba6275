@@ -1,3 +1,10 @@
+/* Thread handling for ECEN 5713, A4 Part 1.
+ * Modified by Tim Bailey, tiba6275@colorado.edu
+ * Referenced ECEN 5713 lecture slides, which referenced
+ * Linux System Programmer.
+ * For educational use only.
+ */
+
 #include "threading.h"
 #include <unistd.h>
 #include <stdlib.h>
@@ -8,11 +15,14 @@
 //#define DEBUG_LOG(msg,...) printf("threading: " msg "\n" , ##__VA_ARGS__)
 #define ERROR_LOG(msg,...) printf("threading ERROR: " msg "\n" , ##__VA_ARGS__)
 
+/* Waits, obtains, waits, and releases mutex.
+ * @param thread_param pointer to arguments for the thread. Struct information
+ * in threading.h.
+ */
 void* threadfunc(void* thread_param)
 {
 
-    // TODO: wait, obtain mutex, wait, release mutex as described by thread_data structure
-    // hint: use a cast like the one below to obtain thread arguments from your parameter
+    // Thread arguments from the parameter
     struct thread_data* thread_func_args = thread_param;
     
     // Wait
@@ -41,7 +51,13 @@ void* threadfunc(void* thread_param)
     return thread_param;
 }
 
-
+    /* Allocates memory for thread_data and sets struct variables, creates thread. Frees allocated memory if
+     * thread creation fails, otherwise should be freed when thread is joined elsewhere. 
+     * @param *thread pointer to thread
+     * @param *mutex pointer to thread mutex
+     * @param wait_to_obtain_ms time to wait to unlock in ms
+     * @param wait_to_release_ms time to wait to release mutex in ms
+     * @return false if error is encountered, otherwise true
 bool start_thread_obtaining_mutex(pthread_t *thread, pthread_mutex_t *mutex,int wait_to_obtain_ms, int wait_to_release_ms)
 {
     /**
@@ -52,6 +68,7 @@ bool start_thread_obtaining_mutex(pthread_t *thread, pthread_mutex_t *mutex,int 
      *
      * See implementation details in threading.h file comment block
      */
+    // Allocate memory for thread data
     struct thread_data* data = malloc(sizeof(struct thread_data));
 
     if (data == NULL) {
@@ -59,10 +76,12 @@ bool start_thread_obtaining_mutex(pthread_t *thread, pthread_mutex_t *mutex,int 
         return false;
     }
 
+    // Setup mutex and wait arguments
     data->mutex = mutex;
     data->wait_to_obtain_ms = wait_to_obtain_ms;
     data->wait_to_release_ms = wait_to_release_ms;
     
+    // Create thread and pass thread_data to created thread
     int create = pthread_create(thread, NULL, threadfunc, data);
     if (create != 0) {
         ERROR_LOG("pthread_create failed with %d\n", create);
