@@ -12,6 +12,8 @@ OBJS = writer.o
 # Default build
 default: $(TARGET)
 
+all: default
+
 # Cross compile using aarch64-none-linux-gnu-gcc
 aarch64-none-linux-gnu-%:
 	$(MAKE) CROSS_COMPILE=aarch64-none-linux-gnu-
