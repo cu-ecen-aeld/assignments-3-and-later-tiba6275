@@ -8,3 +8,6 @@ aesd-build
 test.sh.log
 Test_*_Runner.c
 build/
+aesdsocket
+server/aesdsocket
+server/valgrind-out.txt
