@@ -1,15 +1,17 @@
 # Compiler
-CC = gcc
+CC ?= $(CROSS_COMPILE)gcc
 # Flags
-CFLAGS = -Wall -Werror
+CFLAGS ?= -g -Wall -Werror
 # Cross compiler variable
 CROSS_COMPILE ?=
 # Set target
-TARGET = aesdsocket
+TARGET ?= aesdsocket
 # Set source
-SRCS = aesdsocket.c
+SRCS ?= aesdsocket.c
 # Set object
-OBJS = aesdsocket.o
+OBJS ?= aesdsocket.o
+# Set flags
+LDFLAGS ?= -lpthread -lrt
 
 # Default build
 default: $(TARGET)
@@ -22,11 +24,11 @@ aarch64-none-linux-gnu-%:
 
 # Build with appropriate compiler
 $(TARGET): $(OBJS)
-	$(CROSS_COMPILE)$(CC) $(CFLAGS) -o $(TARGET) $(OBJS)
+	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS) $(LDFLAGS)
 	
 # Build object
 $(OBJS): $(SRCS)
-	$(CROSS_COMPILE)$(CC) $(CFLAGS) -c $(SRCS) -o $(OBJS)
+	$(CC) $(CFLAGS) -c $(SRCS) -o $(OBJS)
 	
 # Valgrind
 valgrind:
