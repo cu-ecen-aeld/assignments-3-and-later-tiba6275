@@ -10,6 +10,8 @@ TARGET ?= writer
 SRCS ?= writer.c
 # Set object
 OBJS ?= writer.o
+# Set flags
+LDFLAGS ?=
 
 # Default build
 default: $(TARGET)

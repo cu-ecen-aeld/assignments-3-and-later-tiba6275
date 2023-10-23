@@ -35,7 +35,6 @@ typedef struct thread_node {
 } node_t;
 
 node_t *head = NULL;
-pthread_mutex_t file_write_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t thread_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // Signal handler to catch SIGINT and SIGTERM for graceful shutdown.

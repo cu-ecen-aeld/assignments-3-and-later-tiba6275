@@ -6,6 +6,10 @@
  * @date 2020-03-01
  * @copyright Copyright (c) 2020
  *
+ * Modified by Tim Bailey, tiba6275@colorado.edu, 2023-22-10 for
+ * AESD5713, Assignment 7
+ * 
+ * For educational use only
  */
 
 #ifdef __KERNEL__
@@ -29,9 +33,36 @@
 struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(struct aesd_circular_buffer *buffer,
             size_t char_offset, size_t *entry_offset_byte_rtn )
 {
-    /**
-    * TODO: implement per description
-    */
+    size_t total_offset = 0;
+    uint8_t current_offset = buffer->out_offs;
+
+    //Traverse entries
+    while(true)
+    {
+        //If full
+        if(!buffer->full && current_offset == buffer->in_offs)
+        {
+            return NULL;
+        }
+
+        //If offset within entry
+        if(char_offset < (total_offset + buffer->entry[current_offset].size))
+        {
+            *entry_offset_byte_rtn = char_offset - total_offset;
+            return &buffer->entry[current_offset];
+        }
+
+        total_offset += buffer->entry[current_offset].size;
+        current_offset = (current_offset + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
+
+        //If wrapped and full
+        if(current_offset == buffer->out_offs && buffer->full)
+        {
+            return NULL;
+        }
+    }
+
+    // Shouldn't reach here
     return NULL;
 }
 
@@ -44,9 +75,20 @@ struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(struct
 */
 void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const struct aesd_buffer_entry *add_entry)
 {
-    /**
-    * TODO: implement per description
-    */
+    buffer->entry[buffer->in_offs] = *add_entry;
+    buffer->in_offs = (buffer->in_offs + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
+
+    //Overwrite oldest if full
+    if(buffer->full)
+    {
+        buffer->out_offs = (buffer->out_offs + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
+    }
+
+    //Set full if wrapped
+    if(buffer->in_offs == 0)
+    {
+        buffer->full = true;
+    }
 }
 
 /**
