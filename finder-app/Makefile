@@ -1,13 +1,17 @@
 # Compiler
-CC = gcc
+CC ?= $(CROSS_COMPILE)gcc
+# Flags
+CFLAGS ?= -g -Wall -Werror
 # Cross compiler variable
 CROSS_COMPILE ?=
 # Set target
-TARGET = writer
+TARGET ?= writer
 # Set source
-SRCS = writer.c
+SRCS ?= writer.c
 # Set object
-OBJS = writer.o
+OBJS ?= writer.o
+# Set flags
+LDFLAGS ?=
 
 # Default build
 default: $(TARGET)
@@ -20,11 +24,16 @@ aarch64-none-linux-gnu-%:
 
 # Build with appropriate compiler
 $(TARGET): $(OBJS)
-	$(CROSS_COMPILE)$(CC) -o $(TARGET) $(OBJS)
+	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS) $(LDFLAGS)
 	
 # Build object
-writer.o: writer.c
-	$(CROSS_COMPILE)$(CC) -c writer.c -o writer.o
+$(OBJS): $(SRCS)
+	$(CC) $(CFLAGS) -c $(SRCS) -o $(OBJS)
+	
+# Valgrind
+valgrind:
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose --log-file=/tmp/valgrind-out.txt ./aesdsocket
+
 
 # Clean target
 clean:
