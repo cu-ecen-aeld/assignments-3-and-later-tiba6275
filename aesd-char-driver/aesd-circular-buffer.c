@@ -85,7 +85,7 @@ void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const s
     }
 
     //Set full if wrapped
-    if(buffer->in_offs == 0)
+    if(buffer->in_offs == buffer->out_offs)
     {
         buffer->full = true;
     }
