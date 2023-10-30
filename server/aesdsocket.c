@@ -28,9 +28,9 @@
 #define BUFFER_SIZE 1024
 
 #ifdef USE_AESD_CHAR_DEVICE
-    #define fdir "/dev/aesdchar";
+    #define fdir "/dev/aesdchar"
 #else
-    #define fdir "/var/tmp/aesdsocketdata";
+    #define fdir "/var/tmp/aesdsocketdata"
 #endif
 
 int sockfd;
