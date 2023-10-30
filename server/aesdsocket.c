@@ -54,6 +54,7 @@ void signal_handler(int signal) {
         closelog();
         exit(0);
     } else if (signal == SIGALRM) {
+    /*
         #ifndef USE_AESD_CHAR_DEVICE
             char timestamp_str[100];
             time_t current_time = time(NULL);
@@ -70,6 +71,7 @@ void signal_handler(int signal) {
             }
             pthread_mutex_unlock(&mutex);
         #endif
+        */
     }
 }
 
