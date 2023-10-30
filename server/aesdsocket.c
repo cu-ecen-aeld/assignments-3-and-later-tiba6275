@@ -27,7 +27,9 @@
 #define SERVER_PORT 9000
 #define BUFFER_SIZE 1024
 
-#ifdef USE_AESD_CHAR_DEVICE
+#define USE_AESD_CHAR_DEVICE 1
+
+#if USE_AESD_CHAR_DEVICE == 1
     #define fdir "/dev/aesdchar"
 #else
     #define fdir "/var/tmp/aesdsocketdata"
@@ -47,15 +49,14 @@ pthread_mutex_t thread_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 void signal_handler(int signal) {
     if (signal == SIGINT || signal == SIGTERM) {
         close(sockfd);
-        #ifndef USE_AESD_CHAR_DEVICE
+        #if USE_AESD_CHAR_DEVICE != 1
             remove(fdir);
         #endif
         syslog(LOG_INFO, "Caught signal, exiting");
         closelog();
         exit(0);
     } else if (signal == SIGALRM) {
-    /*
-        #ifndef USE_AESD_CHAR_DEVICE
+        #if USE_AESD_CHAR_DEVICE != 1
             char timestamp_str[100];
             time_t current_time = time(NULL);
             struct tm *local_time = localtime(&current_time);
@@ -71,7 +72,6 @@ void signal_handler(int signal) {
             }
             pthread_mutex_unlock(&mutex);
         #endif
-        */
     }
 }
 
@@ -269,7 +269,7 @@ int main(int argc, char *argv[]) {
     pthread_mutex_destroy(&mutex);
     timer_delete(timer_id);
     close(sockfd);
-    #ifndef USE_AESD_CHAR_DEVICE
+    #if USE_AESD_CHAR_DEVICE != 1
         remove(fdir);
     #endif
     closelog();
