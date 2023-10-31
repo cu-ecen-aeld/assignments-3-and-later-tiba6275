@@ -27,6 +27,14 @@
 #define SERVER_PORT 9000
 #define BUFFER_SIZE 1024
 
+#define USE_AESD_CHAR_DEVICE 1
+
+#if USE_AESD_CHAR_DEVICE == 1
+    #define fdir "/dev/aesdchar"
+#else
+    #define fdir "/var/tmp/aesdsocketdata"
+#endif
+
 int sockfd;
 pthread_mutex_t mutex;
 typedef struct thread_node {
@@ -41,25 +49,29 @@ pthread_mutex_t thread_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 void signal_handler(int signal) {
     if (signal == SIGINT || signal == SIGTERM) {
         close(sockfd);
-        remove("/var/tmp/aesdsocketdata");
+        #if USE_AESD_CHAR_DEVICE != 1
+            remove(fdir);
+        #endif
         syslog(LOG_INFO, "Caught signal, exiting");
         closelog();
         exit(0);
     } else if (signal == SIGALRM) {
-        char timestamp_str[100];
-        time_t current_time = time(NULL);
-        struct tm *local_time = localtime(&current_time);
-        strftime(timestamp_str, sizeof(timestamp_str), "timestamp:%a, %d %b %Y %H:%M:%S %z\n", local_time);
-        
-        pthread_mutex_lock(&mutex);
-        FILE *fp = fopen("/var/tmp/aesdsocketdata", "a");
-        if (fp == NULL) {
-            perror("fopen: Failed opening file.");
-        } else {
-            fprintf(fp, "%s", timestamp_str);
-            fclose(fp);
-        }
-        pthread_mutex_unlock(&mutex);
+        #if USE_AESD_CHAR_DEVICE != 1
+            char timestamp_str[100];
+            time_t current_time = time(NULL);
+            struct tm *local_time = localtime(&current_time);
+            strftime(timestamp_str, sizeof(timestamp_str), "timestamp:%a, %d %b %Y %H:%M:%S %z\n", local_time);
+            
+            pthread_mutex_lock(&mutex);
+            FILE *fp = fopen(fdir, "a");
+            if (fp == NULL) {
+                perror("fopen: Failed opening file.");
+            } else {
+                fprintf(fp, "%s", timestamp_str);
+                fclose(fp);
+            }
+            pthread_mutex_unlock(&mutex);
+        #endif
     }
 }
 
@@ -69,7 +81,7 @@ void *connection_handler(void *socket_desc) {
     
     while (recv(connfd, buffer, BUFFER_SIZE, 0) > 0) {
         pthread_mutex_lock(&mutex);
-        FILE *fp = fopen("/var/tmp/aesdsocketdata", "a");
+        FILE *fp = fopen(fdir, "a");
         if (fp == NULL) {
             perror("fopen: Failed opening file.");
             pthread_mutex_unlock(&mutex);
@@ -83,7 +95,7 @@ void *connection_handler(void *socket_desc) {
         pthread_mutex_unlock(&mutex);
         
         if (strchr(buffer, '\n') != NULL) {
-            FILE *fp_out = fopen("/var/tmp/aesdsocketdata", "r");
+            FILE *fp_out = fopen(fdir, "r");
             if (fp_out == NULL) {
                 perror("fpopen: Failed opening file.");
                 free(buffer);
@@ -257,7 +269,9 @@ int main(int argc, char *argv[]) {
     pthread_mutex_destroy(&mutex);
     timer_delete(timer_id);
     close(sockfd);
-    remove("/var/tmp/aesdsocketdata");
+    #if USE_AESD_CHAR_DEVICE != 1
+        remove(fdir);
+    #endif
     closelog();
     exit(0);
     return 0;
