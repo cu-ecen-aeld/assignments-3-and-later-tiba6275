@@ -23,6 +23,8 @@
 #include <syslog.h>
 #include <pthread.h>
 #include <time.h>
+#include <fcntl.h>
+#include "../aesd-char-driver/aesd_ioctl.h"
 
 #define SERVER_PORT 9000
 #define BUFFER_SIZE 1024
@@ -78,40 +80,57 @@ void signal_handler(int signal) {
 void *connection_handler(void *socket_desc) {
     int connfd = *(int *)socket_desc;
     char *buffer = calloc(BUFFER_SIZE, sizeof(char));
+    int fd = open(fdir, O_RDWR); //Open the device file only once and use the same fd for IOCTL and reads
     
+    if (fd < 0) {
+        perror("open: Failed to open device.");
+        free(buffer);
+        close(connfd);
+        return NULL;
+    }
+
     while (recv(connfd, buffer, BUFFER_SIZE, 0) > 0) {
-        pthread_mutex_lock(&mutex);
-        FILE *fp = fopen(fdir, "a");
-        if (fp == NULL) {
-            perror("fopen: Failed opening file.");
-            pthread_mutex_unlock(&mutex);
-            free(buffer);
-            close(connfd);
-            return NULL;
-        } else {
-            fprintf(fp, "%s", buffer);
-            fclose(fp);
-        }
-        pthread_mutex_unlock(&mutex);
-        
-        if (strchr(buffer, '\n') != NULL) {
-            FILE *fp_out = fopen(fdir, "r");
-            if (fp_out == NULL) {
-                perror("fpopen: Failed opening file.");
-                free(buffer);
-                close(connfd);
-                return NULL;
+        //Check for AESDCHAR_IOCSEEKTO
+        if (strncmp(buffer, "AESDCHAR_IOCSEEKTO:", 19) == 0) {
+            unsigned int write_cmd, write_cmd_offset;
+            if (sscanf(buffer + 19, "%u,%u", &write_cmd, &write_cmd_offset) == 2) {
+                struct aesd_seekto seekto;
+                seekto.write_cmd = write_cmd;
+                seekto.write_cmd_offset = write_cmd_offset;
+
+                //Send IOCTL to driver
+                int error = ioctl(fd, AESDCHAR_IOCSEEKTO, &seekto);
+                if (error < 0) {
+                    perror("ioctl: AESDCHAR_IOCSEEKTO failed");
+                } else {
+                    //Read and send the content back over the socket
+                    uint32_t bytes_read = 0;
+                    while ((bytes_read = read(fd, buffer, BUFFER_SIZE)) > 0) {
+                        send(connfd, buffer, bytes_read, 0);
+                    }
+                }
             } else {
+                syslog(LOG_ERR, "Failed to parse AESDCHAR_IOCSEEKTO command");
+            }
+        } else {
+            //Write operation
+            pthread_mutex_lock(&mutex);
+            write(fd, buffer, strlen(buffer)); // Write to the device
+            pthread_mutex_unlock(&mutex);
+            
+            if (strchr(buffer, '\n') != NULL) {
+                lseek(fd, 0, SEEK_SET); //Reset the file position to the beginning of the file.
                 uint32_t bytes_read = 0;
-                while ((bytes_read = fread(buffer, 1, BUFFER_SIZE, fp_out)) > 0) {
+                while ((bytes_read = read(fd, buffer, BUFFER_SIZE)) > 0) {
                     send(connfd, buffer, bytes_read, 0);
                 }
-                fclose(fp_out);
             }
         }
         memset(buffer, 0, BUFFER_SIZE);
     }
+
     free(buffer);
+    close(fd);
     close(connfd);
     return NULL;
 }
